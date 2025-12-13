@@ -2,6 +2,8 @@
 
 A full-stack web application for managing a sweet shop inventory, built with Node.js/TypeScript, React, and SQLite/PostgreSQL. This project demonstrates Test-Driven Development (TDD), clean coding practices, and modern development workflows.
 
+**Repository**: [GitHub](https://github.com/tusharrr017-arch/sweet-shop-management)
+
 ## Features
 
 ### Backend API
