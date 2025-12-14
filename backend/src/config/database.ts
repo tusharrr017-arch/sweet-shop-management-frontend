@@ -6,7 +6,7 @@ import path from 'path';
 
 dotenv.config();
 
-const useSQLite = process.env.USE_SQLITE === 'true' || !process.env.DATABASE_URL;
+const useSQLite = process.env.USE_SQLITE === 'true' && process.env.VERCEL !== '1';
 
 let db: Database | null = null;
 let pgPool: Pool | null = null;
@@ -92,20 +92,25 @@ async function initializeDatabase() {
       }
     } else {
       if (!process.env.DATABASE_URL) {
-        throw new Error('DATABASE_URL environment variable is not set');
+        const error = new Error('DATABASE_URL environment variable is not set. Please configure it in Vercel Settings → Environment Variables.');
+        console.error(error.message);
+        throw error;
       }
+      
+      console.log('Attempting to connect to PostgreSQL database...');
       pgPool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        ssl: process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' ? { rejectUnauthorized: false } : false,
       });
       
       try {
-        await pgPool.query('SELECT 1');
+        const result = await pgPool.query('SELECT 1 as test');
+        console.log('PostgreSQL database connected successfully', result.rows[0]);
         dbInitialized = true;
-        console.log('PostgreSQL database connected');
-      } catch (err) {
-        console.error('PostgreSQL connection error:', err);
-        throw err;
+      } catch (err: any) {
+        console.error('PostgreSQL connection error:', err.message);
+        console.error('Connection string (first 20 chars):', process.env.DATABASE_URL?.substring(0, 20));
+        throw new Error(`Database connection failed: ${err.message}`);
       }
     }
   })();
@@ -204,6 +209,10 @@ const pool = {
   },
 };
 
-initializeDatabase().catch(console.error);
+if (process.env.VERCEL !== '1') {
+  initializeDatabase().catch((err) => {
+    console.error('Failed to initialize database on startup:', err);
+  });
+}
 
 export default pool;

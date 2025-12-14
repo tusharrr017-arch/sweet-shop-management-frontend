@@ -16,8 +16,18 @@ app.use(cors({
 
 app.use(express.json());
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Sweet Shop API is running' });
+app.get('/health', async (req, res) => {
+  try {
+    const pool = await import('./config/database');
+    await pool.default.query('SELECT 1');
+    res.json({ status: 'ok', message: 'Sweet Shop API is running', database: 'connected' });
+  } catch (error: any) {
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Sweet Shop API is running but database connection failed',
+      error: error.message 
+    });
+  }
 });
 
 app.use('/api/auth', authRoutes);
