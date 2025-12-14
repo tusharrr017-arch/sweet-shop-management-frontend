@@ -4,6 +4,7 @@
     "module": "commonjs",
     "lib": ["ES2020"],
     "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -13,7 +14,7 @@
     "types": ["node", "jest"],
     "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src/**/*", "netlify/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
 
