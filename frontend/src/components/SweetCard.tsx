@@ -13,9 +13,14 @@ interface SweetCardProps {
   onRestock?: (quantity: number) => void;
 }
 
-const getSweetImage = (name: string, category: string): string => {
-  const nameLower = name.toLowerCase();
-  const categoryLower = category.toLowerCase();
+const getSweetImage = (sweet: Sweet): string => {
+  if (sweet.image_url) {
+    return sweet.image_url;
+  }
+  
+  const nameLower = sweet.name.toLowerCase();
+  const categoryLower = sweet.category.toLowerCase();
+  
   if (nameLower.includes('chocolate')) {
     return 'https://images.unsplash.com/photo-1606312619070-d48d4cc5a55f?w=400&h=300&fit=crop';
   }
@@ -66,7 +71,7 @@ const SweetCard = ({ sweet, onPurchase, onEdit, onDelete, onRestock }: SweetCard
     }
   };
 
-  const imageUrl = getSweetImage(sweet.name, sweet.category);
+  const imageUrl = getSweetImage(sweet);
   const isOutOfStock = sweet.quantity === 0;
 
   return (

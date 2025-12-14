@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Modal, Form, Input, InputNumber } from 'antd';
+import { Modal, Form, Input, InputNumber, Upload, message } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import type { UploadFile } from 'antd';
 import { Sweet } from '../services/api';
 
 interface EditSweetModalProps {
@@ -8,9 +10,19 @@ interface EditSweetModalProps {
   onUpdate: (updates: Partial<Sweet>) => void;
 }
 
+const convertFileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 const EditSweetModal = ({ sweet, onClose, onUpdate }: EditSweetModalProps) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   useEffect(() => {
     form.setFieldsValue({
@@ -19,6 +31,15 @@ const EditSweetModal = ({ sweet, onClose, onUpdate }: EditSweetModalProps) => {
       price: sweet.price,
       quantity: sweet.quantity,
     });
+    
+    if (sweet.image_url) {
+      setFileList([{
+        uid: '-1',
+        name: 'current-image',
+        status: 'done',
+        url: sweet.image_url,
+      }]);
+    }
   }, [sweet, form]);
 
   const handleSubmit = async (values: {
@@ -29,7 +50,21 @@ const EditSweetModal = ({ sweet, onClose, onUpdate }: EditSweetModalProps) => {
   }) => {
     setLoading(true);
     try {
-      onUpdate(values);
+      let imageUrl: string | undefined = sweet.image_url;
+      
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        try {
+          imageUrl = await convertFileToBase64(fileList[0].originFileObj);
+        } catch (error) {
+          message.error('Failed to process image');
+          setLoading(false);
+          return;
+        }
+      } else if (fileList.length === 0 && sweet.image_url) {
+        imageUrl = undefined;
+      }
+
+      onUpdate({ ...values, image_url: imageUrl });
       onClose();
     } catch (error) {
       console.error('Update error:', error);
@@ -103,6 +138,34 @@ const EditSweetModal = ({ sweet, onClose, onUpdate }: EditSweetModalProps) => {
             placeholder="Enter quantity"
             min={0}
           />
+        </Form.Item>
+
+        <Form.Item
+          name="image"
+          label="Image"
+        >
+          <Upload
+            listType="picture"
+            fileList={fileList}
+            beforeUpload={(file) => {
+              if (file.size > 5 * 1024 * 1024) {
+                message.error('Image must be smaller than 5MB!');
+                return false;
+              }
+              setFileList([file]);
+              return false;
+            }}
+            onRemove={() => {
+              setFileList([]);
+              return true;
+            }}
+            accept="image/*"
+            maxCount={1}
+          >
+            <button type="button" style={{ border: 0, background: 'none' }}>
+              <UploadOutlined /> Click to upload
+            </button>
+          </Upload>
         </Form.Item>
       </Form>
     </Modal>

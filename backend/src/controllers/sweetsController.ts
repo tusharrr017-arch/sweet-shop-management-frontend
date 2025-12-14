@@ -4,15 +4,15 @@ import pool from '../config/database';
 
 export const createSweet = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, category, price, quantity } = req.body;
+    const { name, category, price, quantity, image_url } = req.body;
 
     if (!name || !category || price === undefined || quantity === undefined) {
       return res.status(400).json({ error: 'Name, category, price, and quantity are required' });
     }
 
     const result = await pool.query(
-      'INSERT INTO sweets (name, category, price, quantity) VALUES ($1, $2, $3, $4) RETURNING *',
-      [name, category, price, quantity]
+      'INSERT INTO sweets (name, category, price, quantity, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [name, category, price, quantity, image_url || null]
     );
 
     res.status(201).json({ message: 'Sweet created successfully', sweet: result.rows[0] });
@@ -81,7 +81,7 @@ export const searchSweets = async (req: AuthRequest, res: Response) => {
 export const updateSweet = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, category, price, quantity } = req.body;
+    const { name, category, price, quantity, image_url } = req.body;
 
     const sweetId = parseInt(id);
     if (isNaN(sweetId)) {
@@ -117,6 +117,11 @@ export const updateSweet = async (req: AuthRequest, res: Response) => {
       paramCount++;
       updates.push(`quantity = $${paramCount}`);
       values.push(quantity);
+    }
+    if (image_url !== undefined) {
+      paramCount++;
+      updates.push(`image_url = $${paramCount}`);
+      values.push(image_url || null);
     }
 
     if (updates.length === 0) {

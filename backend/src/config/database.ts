@@ -55,6 +55,7 @@ async function initializeSQLiteSchema(database: Database) {
       category TEXT NOT NULL,
       price REAL NOT NULL CHECK (price >= 0),
       quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+      image_url TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );

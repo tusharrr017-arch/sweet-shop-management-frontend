@@ -8,6 +8,7 @@ export interface Sweet {
   category: string;
   price: number;
   quantity: number;
+  image_url?: string;
   created_at: string;
   updated_at: string;
 }

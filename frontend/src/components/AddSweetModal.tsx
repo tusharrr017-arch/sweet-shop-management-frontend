@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Modal, Form, Input, InputNumber, message } from 'antd';
+import { Modal, Form, Input, InputNumber, message, Upload } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import type { UploadFile } from 'antd';
 import { Sweet } from '../services/api';
 
 interface AddSweetModalProps {
@@ -7,9 +9,19 @@ interface AddSweetModalProps {
   onAdd: (sweet: Omit<Sweet, 'id' | 'created_at' | 'updated_at'>) => void;
 }
 
+const convertFileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 const AddSweetModal = ({ onClose, onAdd }: AddSweetModalProps) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   const handleSubmit = async (values: {
     name: string;
@@ -19,8 +31,21 @@ const AddSweetModal = ({ onClose, onAdd }: AddSweetModalProps) => {
   }) => {
     setLoading(true);
     try {
-      onAdd(values);
+      let imageUrl: string | undefined;
+      
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        try {
+          imageUrl = await convertFileToBase64(fileList[0].originFileObj);
+        } catch (error) {
+          message.error('Failed to process image');
+          setLoading(false);
+          return;
+        }
+      }
+
+      onAdd({ ...values, image_url: imageUrl });
       form.resetFields();
+      setFileList([]);
     } catch (error) {
       message.error('Failed to add sweet');
     } finally {
@@ -93,6 +118,34 @@ const AddSweetModal = ({ onClose, onAdd }: AddSweetModalProps) => {
             placeholder="Enter initial quantity"
             min={0}
           />
+        </Form.Item>
+
+        <Form.Item
+          name="image"
+          label="Image"
+        >
+          <Upload
+            listType="picture"
+            fileList={fileList}
+            beforeUpload={(file) => {
+              if (file.size > 5 * 1024 * 1024) {
+                message.error('Image must be smaller than 5MB!');
+                return false;
+              }
+              setFileList([file]);
+              return false;
+            }}
+            onRemove={() => {
+              setFileList([]);
+              return true;
+            }}
+            accept="image/*"
+            maxCount={1}
+          >
+            <button type="button" style={{ border: 0, background: 'none' }}>
+              <UploadOutlined /> Click to upload
+            </button>
+          </Upload>
         </Form.Item>
       </Form>
     </Modal>

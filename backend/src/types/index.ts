@@ -14,6 +14,7 @@ export interface Sweet {
   category: string;
   price: number;
   quantity: number;
+  image_url?: string;
   created_at: Date;
   updated_at: Date;
 }
