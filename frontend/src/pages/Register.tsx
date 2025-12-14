@@ -27,18 +27,34 @@ const Register = () => {
       message.success('Registration successful!');
       navigate('/');
     } catch (err: any) {
+      console.error('Registration error:', err);
+      console.error('Error response:', err.response);
+      console.error('Error data:', err.response?.data);
+      
       let errorMessage = 'Registration failed';
-      if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
+      
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errorMessage = err.response.data;
+        } else if (err.response.data.error) {
+          errorMessage = typeof err.response.data.error === 'string' 
+            ? err.response.data.error 
+            : JSON.stringify(err.response.data.error);
+        } else if (err.response.data.message) {
+          errorMessage = typeof err.response.data.message === 'string'
+            ? err.response.data.message
+            : JSON.stringify(err.response.data.message);
+        } else {
+          errorMessage = `Server error: ${err.response.status} ${err.response.statusText}`;
+        }
       } else if (err.message) {
         errorMessage = err.message;
-      } else if (typeof err === 'string') {
-        errorMessage = err;
-      } else if (err.response?.data) {
-        errorMessage = JSON.stringify(err.response.data);
+      } else if (err.request) {
+        errorMessage = 'Network error: Unable to connect to server. Please check your connection.';
+      } else {
+        errorMessage = 'An unexpected error occurred. Please try again.';
       }
       
-      console.error('Registration error:', err);
       message.error(errorMessage);
       
       if (errorMessage.includes('already exists')) {

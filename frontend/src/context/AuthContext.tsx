@@ -85,7 +85,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     } catch (error: any) {
       console.error('Login error details:', error);
-      const errorMsg = error.response?.data?.error || error.message || 'Login failed';
+      console.error('Error response:', error.response);
+      
+      let errorMsg = 'Login failed';
+      
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMsg = error.response.data;
+        } else if (error.response.data.error) {
+          errorMsg = typeof error.response.data.error === 'string' 
+            ? error.response.data.error 
+            : String(error.response.data.error);
+        } else if (error.response.data.message) {
+          errorMsg = typeof error.response.data.message === 'string'
+            ? error.response.data.message
+            : String(error.response.data.message);
+        } else {
+          errorMsg = `Server error: ${error.response.status}`;
+        }
+      } else if (error.message) {
+        errorMsg = error.message;
+      } else if (error.request) {
+        errorMsg = 'Network error: Unable to connect to server';
+      }
+      
       throw new Error(errorMsg);
     }
   };
@@ -102,7 +125,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     } catch (error: any) {
       console.error('Registration error details:', error);
-      const errorMsg = error.response?.data?.error || error.message || 'Registration failed';
+      console.error('Error response:', error.response);
+      
+      let errorMsg = 'Registration failed';
+      
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMsg = error.response.data;
+        } else if (error.response.data.error) {
+          errorMsg = typeof error.response.data.error === 'string' 
+            ? error.response.data.error 
+            : String(error.response.data.error);
+        } else if (error.response.data.message) {
+          errorMsg = typeof error.response.data.message === 'string'
+            ? error.response.data.message
+            : String(error.response.data.message);
+        } else {
+          errorMsg = `Server error: ${error.response.status}`;
+        }
+      } else if (error.message) {
+        errorMsg = error.message;
+      } else if (error.request) {
+        errorMsg = 'Network error: Unable to connect to server';
+      }
+      
       throw new Error(errorMsg);
     }
   };
