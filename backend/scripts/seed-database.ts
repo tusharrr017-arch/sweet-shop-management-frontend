@@ -2,6 +2,14 @@ import '../src/config/database';
 import pool from '../src/config/database';
 import bcrypt from 'bcryptjs';
 
+// Default admin user - only create if needed
+// Set SEED_SAMPLE_DATA=true to add sample sweets (optional)
+const DEFAULT_ADMIN = {
+  email: 'admin@sweetshop.com',
+  password: 'admin123',
+  role: 'admin'
+};
+
 const sampleSweets = [
   { name: 'Chocolate Bar', category: 'Chocolate', price: 2.50, quantity: 100 },
   { name: 'Gummy Bears', category: 'Gummies', price: 1.50, quantity: 150 },
@@ -14,13 +22,6 @@ const sampleSweets = [
   { name: 'Rock Candy', category: 'Hard Candy', price: 1.00, quantity: 110 },
   { name: 'Truffle', category: 'Chocolate', price: 5.00, quantity: 40 },
 ];
-
-// Default admin user for testing/review
-const DEFAULT_ADMIN = {
-  email: 'admin@sweetshop.com',
-  password: 'admin123',
-  role: 'admin'
-};
 
 async function seedDatabase() {
   try {
@@ -46,29 +47,35 @@ async function seedDatabase() {
       console.log(`ℹ️  Admin user already exists: ${DEFAULT_ADMIN.email}\n`);
     }
     
-    // Check if sweets already exist
-    const existing = await pool.query('SELECT COUNT(*) as count FROM sweets');
-    const count = existing.rows[0]?.count || 0;
-    
-    if (count > 0) {
-      console.log(`Database already has ${count} sweets. Skipping sweet seeding.`);
-      console.log(`\n📝 Default Admin Credentials:`);
-      console.log(`   Email: ${DEFAULT_ADMIN.email}`);
-      console.log(`   Password: ${DEFAULT_ADMIN.password}`);
-      return;
+    // Only seed sample data if SEED_SAMPLE_DATA is set to true
+    if (process.env.SEED_SAMPLE_DATA === 'true') {
+      // Check if sweets already exist
+      const existing = await pool.query('SELECT COUNT(*) as count FROM sweets');
+      const count = parseInt(String(existing.rows[0]?.count || '0'));
+      
+      if (count > 0) {
+        console.log(`Database already has ${count} sweets. Skipping sweet seeding.`);
+        console.log(`\n📝 Default Admin Credentials:`);
+        console.log(`   Email: ${DEFAULT_ADMIN.email}`);
+        console.log(`   Password: ${DEFAULT_ADMIN.password}`);
+        return;
+      }
+      
+      // Insert sample sweets
+      console.log('Adding sample sweets...');
+      for (const sweet of sampleSweets) {
+        await pool.query(
+          'INSERT INTO sweets (name, category, price, quantity) VALUES ($1, $2, $3, $4)',
+          [sweet.name, sweet.category, sweet.price, sweet.quantity]
+        );
+        console.log(`Added: ${sweet.name}`);
+      }
+      
+      console.log(`\n✅ Successfully seeded ${sampleSweets.length} sweets!`);
+    } else {
+      console.log('ℹ️  Sample data seeding skipped. Set SEED_SAMPLE_DATA=true to enable.');
     }
     
-    // Insert sample sweets
-    console.log('Adding sample sweets...');
-    for (const sweet of sampleSweets) {
-      await pool.query(
-        'INSERT INTO sweets (name, category, price, quantity) VALUES ($1, $2, $3, $4)',
-        [sweet.name, sweet.category, sweet.price, sweet.quantity]
-      );
-      console.log(`Added: ${sweet.name}`);
-    }
-    
-    console.log(`\n✅ Successfully seeded ${sampleSweets.length} sweets!`);
     console.log(`\n📝 Default Admin Credentials:`);
     console.log(`   Email: ${DEFAULT_ADMIN.email}`);
     console.log(`   Password: ${DEFAULT_ADMIN.password}`);

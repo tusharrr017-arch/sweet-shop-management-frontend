@@ -1,6 +1,6 @@
 # Sweet Shop Management System
 
-A full-stack web application for managing a sweet shop inventory, built with Node.js/TypeScript, React, and SQLite/PostgreSQL. This project demonstrates Test-Driven Development (TDD), clean coding practices, and modern development workflows.
+A full-stack web application for managing a sweet shop inventory, built with Node.js/TypeScript, React, and PostgreSQL (Vercel DB). This project demonstrates Test-Driven Development (TDD), clean coding practices, and modern development workflows.
 
 **Repository**: [GitHub](https://github.com/tusharrr017-arch/sweet-shop-management)
 
@@ -27,7 +27,7 @@ A full-stack web application for managing a sweet shop inventory, built with Nod
 ### Backend
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express.js
-- **Database**: SQLite (default) or PostgreSQL
+- **Database**: PostgreSQL (Vercel DB)
 - **Authentication**: JWT (JSON Web Tokens)
 - **Testing**: Jest with Supertest
 - **Password Hashing**: bcryptjs
@@ -47,9 +47,8 @@ Before you begin, ensure you have the following installed:
 - npm or yarn
 - Git
 
-**Database Options:**
-- **SQLite** (Recommended for quick start): No installation needed! Works out of the box.
-- **PostgreSQL** (Optional): For production use or if you prefer PostgreSQL.
+**Database:**
+- **PostgreSQL** (Vercel DB): Required. The application uses PostgreSQL for all database operations.
 
 ## Setup Instructions
 
@@ -62,26 +61,42 @@ cd project_01
 
 ### 2. Database Setup
 
-**Option A: SQLite (Easiest - Recommended for Development)**
+**Using Vercel DB (Recommended for Production)**
 
-SQLite is configured by default and requires no setup! The database will be automatically created when you start the server.
+1. Create a PostgreSQL database in Vercel:
+   - Go to your Vercel project dashboard
+   - Navigate to the "Storage" tab
+   - Click "Create Database" and select "Postgres"
+   - Follow the setup wizard to create your database
 
-**Option B: PostgreSQL (For Production)**
+2. Get your connection string:
+   - In Vercel, go to your database settings
+   - Copy the `POSTGRES_URL` connection string
+   - This will be used as your `DATABASE_URL`
 
-1. Create a PostgreSQL database:
+3. Run the database migration:
+```bash
+cd backend
+# Using psql with your Vercel DB connection string
+psql $DATABASE_URL -f migrations/001_initial_schema.sql
+
+# Or if you have the connection string directly:
+psql "postgresql://user:password@host:port/database" -f migrations/001_initial_schema.sql
+```
+
+**For Local Development (PostgreSQL)**
+
+1. Install PostgreSQL locally if you haven't already
+
+2. Create a local PostgreSQL database:
 ```bash
 createdb sweet_shop_db
 ```
 
-2. Run the database migration:
+3. Run the database migration:
 ```bash
 cd backend
 psql -d sweet_shop_db -f migrations/001_initial_schema.sql
-```
-
-3. Set `DATABASE_URL` in `backend/.env`:
-```env
-DATABASE_URL=postgresql://username:password@localhost:5432/sweet_shop_db
 ```
 
 ### 3. Backend Setup
@@ -103,18 +118,25 @@ cp .env.example .env
 
 4. Update the `.env` file with your configuration:
 ```env
-DATABASE_URL=postgresql://username:password@localhost:5432/sweet_shop_db
+DATABASE_URL=postgresql://username:password@host:port/database
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=24h
 PORT=3001
 NODE_ENV=development
 ```
 
-For SQLite (default), you can leave `DATABASE_URL` empty or omit it.
+   **For Vercel DB**: Use the `POSTGRES_URL` from your Vercel dashboard as the `DATABASE_URL`
+   
+   **For Local Development**: Use your local PostgreSQL connection string
 
-5. Seed the database with sample data and default admin user:
+5. Seed the database with default admin user:
 ```bash
 npm run seed
+```
+
+   **Optional**: To seed sample sweets data, set `SEED_SAMPLE_DATA=true` in your `.env` file before running the seed command:
+```env
+SEED_SAMPLE_DATA=true
 ```
 
 6. Start the backend server:
@@ -359,7 +381,7 @@ vercel
 3. **Set Environment Variables:**
    - `JWT_SECRET`: Your JWT secret key
    - `JWT_EXPIRES_IN`: Token expiration (e.g., "24h")
-   - `DATABASE_URL`: PostgreSQL connection string (SQLite won't work on Vercel)
+   - `DATABASE_URL`: PostgreSQL connection string (required)
 
 4. **Configure Database:**
    - Use a PostgreSQL database (Supabase, Neon, or Vercel Postgres)
@@ -372,7 +394,7 @@ After deployment, your application will be available at:
 - **Frontend**: `https://your-project.vercel.app`
 - **Backend API**: `https://your-project.vercel.app/api`
 
-**Note**: Vercel uses a read-only filesystem, so SQLite won't work. You'll need a PostgreSQL database (Supabase, Neon, or Vercel Postgres are good free options).
+**Note**: The application requires PostgreSQL. Vercel Postgres is recommended for seamless integration, but you can also use Supabase, Neon, or any other PostgreSQL database.
 
 ## My AI Usage
 
@@ -388,10 +410,10 @@ I used **Cursor AI** (powered by Claude) extensively throughout the development 
 
 2. **Backend Development**
    - **API Endpoints**: AI assisted in generating the initial structure for Express routes, controllers, and middleware
-   - **Database Schema**: Used AI to design and generate the SQLite/PostgreSQL schema with proper constraints and indexes
+   - **Database Schema**: Used AI to design and generate the PostgreSQL schema with proper constraints and indexes
    - **Authentication Logic**: AI helped implement JWT authentication flow, password hashing with bcrypt, and middleware for route protection
    - **Error Handling**: AI suggested patterns for consistent error handling across controllers
-   - **Database Compatibility**: AI helped convert PostgreSQL-specific SQL to SQLite-compatible queries
+   - **Database Setup**: AI helped set up PostgreSQL database configuration and migrations
 
 3. **Frontend Development**
    - **Component Structure**: AI generated the initial React component structure and routing setup

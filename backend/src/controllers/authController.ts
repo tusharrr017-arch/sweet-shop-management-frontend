@@ -47,12 +47,26 @@ export const register = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Registration error:', error);
     console.error('Error details:', error.message, error.stack);
-    const errorMessage = error.message || 'Internal server error';
+    
+    // Extract error message properly
+    let errorMessage = 'Internal server error';
+    if (error?.message) {
+      errorMessage = String(error.message);
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+    
+    // Check for database connection errors
+    const isDbError = errorMessage.includes('DATABASE_URL') || 
+                     errorMessage.includes('connection') ||
+                     errorMessage.includes('ECONNREFUSED') ||
+                     errorMessage.includes('timeout');
+    
     res.status(500).json({ 
-      error: errorMessage.includes('DATABASE_URL') || errorMessage.includes('connection') 
+      error: isDbError
         ? 'Database connection error. Please check your database configuration.'
         : 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 };
@@ -93,12 +107,26 @@ export const login = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Login error:', error);
     console.error('Error details:', error.message, error.stack);
-    const errorMessage = error.message || 'Internal server error';
+    
+    // Extract error message properly
+    let errorMessage = 'Internal server error';
+    if (error?.message) {
+      errorMessage = String(error.message);
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+    
+    // Check for database connection errors
+    const isDbError = errorMessage.includes('DATABASE_URL') || 
+                     errorMessage.includes('connection') ||
+                     errorMessage.includes('ECONNREFUSED') ||
+                     errorMessage.includes('timeout');
+    
     res.status(500).json({ 
-      error: errorMessage.includes('DATABASE_URL') || errorMessage.includes('connection') 
+      error: isDbError
         ? 'Database connection error. Please check your database configuration.'
         : 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 };
