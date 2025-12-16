@@ -156,13 +156,28 @@ const EditSweetModal = ({ sweet, onClose, onUpdate }: EditSweetModalProps) => {
         } else if (file.url) {
           // Existing image URL from fileList - use it (could be URL or base64)
           // If it's a URL input (uid: '-2'), use it
-          // If it's the original image (uid: '-1'), check if we should keep it
+          // If it's the original image (uid: '-1'), check if it's too large
           if (file.uid === '-2') {
             // User entered a URL directly
             imageUrl = file.url;
           } else if (file.uid === '-1') {
-            // This is the original image - keep it as is
-            imageUrl = file.url;
+            // This is the original image - check if it's base64 and too large
+            if (file.url.startsWith('data:image')) {
+              // It's a base64 image - check size
+              const base64Size = (file.url.length * 3) / 4; // Approximate byte size
+              if (base64Size > 3.5 * 1024 * 1024) {
+                // Image is too large (>3.5MB), don't send it back
+                // User needs to re-upload a compressed version
+                message.warning('Existing image is too large. Please upload a new image or use an image URL.');
+                imageUrl = null; // Clear the image
+              } else {
+                // Image is small enough, keep it
+                imageUrl = file.url;
+              }
+            } else {
+              // It's a regular URL, keep it
+              imageUrl = file.url;
+            }
           } else {
             // Some other case - use the URL
             imageUrl = file.url;
