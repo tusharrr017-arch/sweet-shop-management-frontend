@@ -10,6 +10,65 @@ interface EditSweetModalProps {
   onUpdate: (updates: Partial<Sweet>) => void;
 }
 
+// Compress image before converting to base64
+const compressImage = (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.8): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('Image compression failed'));
+              return;
+            }
+            const compressedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          file.type,
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+  });
+};
+
 const convertFileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -63,9 +122,25 @@ const EditSweetModal = ({ sweet, onClose, onUpdate }: EditSweetModalProps) => {
         
         // Check if it's a new file upload (has originFileObj)
         if (file.originFileObj) {
-          // New file uploaded - convert to base64
+          // New file uploaded - compress first, then convert to base64
           try {
-            imageUrl = await convertFileToBase64(file.originFileObj);
+            // Compress image to reduce size (max 1920x1920, 80% quality)
+            const compressedFile = await compressImage(file.originFileObj, 1920, 1920, 0.8);
+            
+            // Check if compressed file is still too large (4MB limit for Vercel)
+            if (compressedFile.size > 4 * 1024 * 1024) {
+              // Try more aggressive compression
+              const moreCompressed = await compressImage(file.originFileObj, 1280, 1280, 0.7);
+              if (moreCompressed.size > 4 * 1024 * 1024) {
+                message.error('Image is too large even after compression. Please use a smaller image or image URL.');
+                setLoading(false);
+                return;
+              }
+              imageUrl = await convertFileToBase64(moreCompressed);
+            } else {
+              imageUrl = await convertFileToBase64(compressedFile);
+            }
+            
             // Verify base64 is valid
             if (!imageUrl || imageUrl.length < 100) {
               message.error('Failed to process image - invalid data');
@@ -73,7 +148,7 @@ const EditSweetModal = ({ sweet, onClose, onUpdate }: EditSweetModalProps) => {
               return;
             }
           } catch (error) {
-            console.error('❌ Base64 conversion error:', error);
+            console.error('❌ Image processing error:', error);
             message.error('Failed to process image');
             setLoading(false);
             return;
