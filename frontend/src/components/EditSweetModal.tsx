@@ -195,7 +195,7 @@ const EditSweetModal = ({ sweet, onClose, onUpdate }: EditSweetModalProps) => {
         }
       }
       
-      // Build updates object - only include image_url if it changed
+      // Build updates object
       const updates: Partial<Sweet> & { image_url?: string | null } = {
         name: values.name,
         category: values.category,
@@ -203,8 +203,18 @@ const EditSweetModal = ({ sweet, onClose, onUpdate }: EditSweetModalProps) => {
         quantity: values.quantity,
       };
       
-      // Only include image_url if it actually changed (prevents sending large base64 images back)
+      // Only include image_url if it changed AND is not too large
       if (imageUrl !== sweet.image_url) {
+        // Check size before sending (Vercel limit is 4.5MB)
+        if (imageUrl && imageUrl.startsWith('data:image')) {
+          const base64Size = (imageUrl.length * 3) / 4; // Approximate byte size
+          if (base64Size > 3.5 * 1024 * 1024) {
+            // Image is too large, don't send it
+            message.error('Image is too large to upload. Please use an image URL instead or compress the image further.');
+            setLoading(false);
+            return;
+          }
+        }
         updates.image_url = imageUrl;
       }
       
